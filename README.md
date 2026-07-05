@@ -1,248 +1,86 @@
-# Dokumentace projektu "E-shopu Pana Dyntra"
+<!-- 1) BANNER -->
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:7C5CFF,100:B69CFF&height=170&section=header&text=eshop-system&fontColor=ffffff&fontSize=44&desc=E-shop%20system%3A%20customers%2C%20orders%2C%20MySQL&descAlignY=62&descSize=16&animation=fadeIn" width="100%"/>
+</p>
 
-## Obsah
+<!-- 2) TYPING SVG -->
+<p align="center">
+  <a href="https://github.com/dyntr">
+    <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&size=18&pause=1000&color=7C5CFF&center=true&vCenter=true&width=680&lines=Flask+storefront+%2B+CLI+admin+console%2C+one+MySQL+schema;CRUD+factories%2C+CSV%2FJSON%2FXML+import%2C+sales+reports" alt="typing"/>
+  </a>
+</p>
 
-1. [Popis projektu](#popis-projektu)
-2. [Struktura projektu](#struktura-projektu)
-3. [Funkce](#funkce)
-4. [Instalace a spuštění](#instalace-a-spuštění)
-5. [Použití](#použití)
-6. [Výjimky](#výjimky)
-7. [Závěr](#závěr)
+<!-- 3) BADGES -->
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&logo=python&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Flask-000000?style=flat-square&logo=flask&logoColor=white"/>
+  <img src="https://img.shields.io/badge/MySQL-4479A1?style=flat-square&logo=mysql&logoColor=white"/>
+  <img src="https://img.shields.io/badge/pytest-0A9EDC?style=flat-square&logo=pytest&logoColor=white"/>
+  <img src="https://img.shields.io/badge/status-school%20project-6e7681?style=flat-square"/>
+</p>
 
-## Popis projektu
+## Overview
 
-Projekt **My E-shop** je školní projekt vyvinutý pro správu dat elektronického obchodu. Systém umožňuje přidávat a získávat data o zákaznících, produktech, objednávkách, položkách objednávek a transakcích. Program využívá několik tříd, z nichž každá představuje jiný typ dat v obchodě.
+A larger "ročníková práce" school project built as two apps sharing one MySQL database: a Flask storefront for customers (browse, cart, checkout, account) and a separate command-line admin console (`src/`) for full CRUD on the same data — customers, products, orders, order items and transactions.
 
-- **Customer**: Reprezentuje zákazníka obchodu a má vlastnosti jako jméno, adresa, město a kreditní body.
-- **Product**: Reprezentuje produkt obchodu a má vlastnosti jako jméno, typ a cena.
-- **Order**: Reprezentuje objednávku zadanou zákazníkem a má vlastnosti jako ID zákazníka, datum objednávky a ID objednávky.
-- **OrderItem**: Reprezentuje jednu položku v objednávce a má vlastnosti jako ID objednávky, ID produktu a množství.
-- **Transaction**: Reprezentuje transakci mezi obchodem a zákazníkem a má vlastnosti jako ID transakce, ID objednávky a částka.
+## ✦ Features
 
-## Struktura projektu
+- **Flask storefront** (`website/`) — product listing & search, filter by product type, session-based cart, checkout, order history, login/registration, account editing. Templates are rendered with Jinja2 via `render_template` despite the `.php` file extension — a naming leftover from an earlier plan to use PHP, not actual PHP execution.
+- **CLI admin console** (`src/`) — an interactive menu-driven tool built around Factory classes (`CustomerFactory`, `ProductFactory`, `OrdersFactory`, `OrderItemFactory`, `TransactionFactory`) that each implement create/read/update/delete for their table.
+- **`Sc_Factory.create_order()`** performs a full checkout server-side in one place: inserts the order, inserts each order item, deducts the customer's credit-point balance by the order total, and logs a `Transaction` row.
+- **`GenerateReportFactory`** builds a plain-text summary report — total credit points and customer count per city, total sales per product type.
+- **`ImportFactory`** bulk-loads customers, products, orders, order items or transactions from CSV, JSON, or XML into any table.
+- **Singleton DB connection** (`DbConnection`) reads `config/config.ini` and hands out one shared `mysql-connector-python` connection.
+- **Tests** with `pytest` covering the DB connection, auth flows, and views.
+- Ready-to-run MySQL dump (`sql/script.sql`) defining the schema: `customer`, `product`, `orders`, `orderitem`, `transaction`.
 
-Projekt je rozdělen do několika hlavních komponent:
+## 🛠 Built with
 
-### Struktura souborů
+Flask, Flask-Bootstrap, Flask-WTF, Flask-Session, `mysql-connector-python`, pytest.
 
-```
-config
-├── config.ini
-└── requirements.txt
+## 🧭 Order flow
 
-sql
-└── script.sql
-
-src
-├── db_connect.py
-├── db_factory.py
-├── main.py
-├── sc_factory.py
-├── sc_test.py
-├── test_conn.py
-├── test_db.py
-└── ui.py
-
-website
-├── static
-│   ├── script.js
-│   └── styles.css
-├── templates
-│   ├── account.php
-│   ├── auth.php
-│   ├── base.php
-│   ├── cart.php
-│   ├── favicon.ico
-│   ├── order_history.php
-│   ├── products.php
-│   └── search.php
-├── __init__.py
-├── auth.py
-├── main.py
-├── test_auth.py
-├── test_views.py
-└── views.py
+```mermaid
+flowchart TD
+    A[Customer / admin places an order] --> B[Sc_Factory.create_order]
+    B --> C[INSERT Orders row]
+    C --> D[INSERT OrderItem per product]
+    D --> E[Look up Product.Price]
+    E --> F[Sum total price]
+    F --> G[Deduct CreditPoints from Customer]
+    G --> H[INSERT Transaction: -total]
+    H --> I[Commit]
 ```
 
-### Soubory projektu
+## 📦 Getting started
 
-- **config/config.ini**: Konfigurační soubor pro nastavení databáze.
-- **config/sql/script.sql**: SQL skript pro vytvoření databáze a tabulek.
-
-- **src/db_connect.py**: Soubor obsahující třídu pro připojení k databázi.
-- **src/db_factory.py**: Soubor obsahující tovární třídy pro správu dat (zákazníci, produkty, objednávky, položky objednávek, transakce).
-- **src/main.py**: Hlavní soubor aplikace, který inicializuje a spouští aplikaci.
-- **src/sc_factory.py**: Soubor obsahující třídy pro vytváření objednávek.
-- **src/sc_test.py**: Soubor obsahující testy pro objednávky.
-- **src/test_conn.py**: Soubor pro testování připojení k databázi.
-- **src/test_db.py**: Soubor pro testování databázových operací.
-- **src/ui.py**: Soubor obsahující uživatelské rozhraní pro příkazovou řádku.
-
-- **website/static/script.js**: JavaScript soubor pro interaktivitu webové aplikace.
-- **website/static/styles.css**: CSS soubor pro stylování aplikace.
-
-- **website/templates/account.php**: Šablona pro stránku účtu uživatele.
-- **website/templates/auth.php**: Šablona pro přihlašování a registraci.
-- **website/templates/base.php**: Základní šablona pro celou webovou aplikaci.
-- **website/templates/cart.php**: Šablona pro stránku nákupního košíku.
-- **website/templates/favicon.ico**: Ikona webu.
-- **website/templates/order_history.php**: Šablona pro historii objednávek.
-- **website/templates/products.php**: Šablona pro stránku produktů.
-- **website/templates/search.php**: Šablona pro stránku vyhledávání.
-
-- **website/__init__.py**: Inicializační soubor pro webovou aplikaci.
-- **website/auth.py**: Soubor obsahující autentizační logiku aplikace (přihlášení, registrace, odhlášení).
-- **website/main.py**: Hlavní soubor webové aplikace.
-- **website/test_auth.py**: Testy pro autentizační funkce.
-- **website/test_views.py**: Testy pro hlavní pohledy aplikace.
-- **website/views.py**: Soubor obsahující hlavní pohledy a logiku aplikace.
-
-## Funkce
-
-Projekt nabízí následující hlavní funkce:
-
-### Třídy
-
-#### CustomerFactory
-- **create_customer**: Vytvoří nového zákazníka a vloží ho do tabulky "Customer".
-- **read_customer**: Získá konkrétního zákazníka podle ID z tabulky "Customer".
-- **update_customer**: Aktualizuje informace o stávajícím zákazníkovi v tabulce "Customer".
-- **delete_customer**: Smaže zákazníka z tabulky "Customer".
-
-#### ProductFactory
-- **add_product**: Přidá nový produkt a vloží ho do tabulky "Product".
-- **get_product**: Získá konkrétní produkt podle ID z tabulky "Product".
-- **update_product**: Aktualizuje informace o stávajícím produktu v tabulce "Product".
-- **delete_product**: Smaže produkt z tabulky "Product".
-
-#### OrdersFactory
-- **create_order**: Vytvoří novou objednávku a vloží ji do tabulky "Orders".
-- **read_order**: Získá konkrétní objednávku podle ID z tabulky "Orders".
-- **update_order**: Aktualizuje informace o stávající objednávce v tabulce "Orders".
-- **delete_order**: Smaže objednávku z tabulky "Orders".
-
-#### OrderItemFactory
-- **create_order_item**: Vytvoří novou položku objednávky a vloží ji do tabulky "OrderItem".
-- **read_order_item**: Získá konkrétní položku objednávky podle ID z tabulky "OrderItem".
-- **update_order_item**: Aktualizuje informace o stávající položce objednávky v tabulce "OrderItem".
-- **delete_order_item**: Smaže položku objednávky z tabulky "OrderItem".
-
-#### TransactionFactory
-- **create_transaction**: Vytvoří novou transakci a vloží ji do tabulky "Transaction".
-- **read_transaction**: Získá konkrétní transakci podle ID z tabulky "Transaction".
-- **update_transaction**: Aktualizuje informace o stávající transakci v tabulce "Transaction".
-- **delete_transaction**: Smaže transakci z tabulky "Transaction".
-
-#### GenerateReportFactory
-- **generate_report**: Generuje report, který shrnuje data v databázi.
-
-### Další funkce
-
-- **menu function**: Zobrazuje hlavní menu programu a poskytuje možnosti pro přístup k různým částem programu.
-- **customer_menu function**: Správa zákazníků (přidávání, úpravy, získávání informací).
-- **product_menu function**: Správa produktů (přidávání, úpravy, získávání informací).
-- **order_menu function**: Správa objednávek (přidávání, úpravy, získávání informací).
-- **order_item_menu function**: Správa položek objednávek (přidávání, úpravy, získávání informací).
-- **transaction_menu function**: Správa transakcí (přidávání, úpravy, získávání informací).
-- **import_data function**: Import dat do programu z CSV souboru.
-
-## Instalace a spuštění
-
-### Předpoklady
-
-- Nainstalovaný MySQL server.
-- Nainstalovaný Python 3.
-- Nainstalovaný PhpStorm / Visual Studio Code.
-
-## Instalace a spuštění
-
-### Předpoklady
-- Nainstalovaný MySQL server.
-- Nainstalovaný Python 3.
-- Nainstalovaný Visual Studio Code.
-
-### Instalace závislostí
-V terminálu spusťte následující příkaz pro instalaci všech závislostí najednou:
+Requires Python 3 and a local MySQL server.
 
 ```bash
 pip install -r config/requirements.txt
+
+# creates the `rocnikovka` schema, tables and seed data
+mysql -u root -p < sql/script.sql
+
+# storefront -> http://127.0.0.1:5000 (run from Database_app/, NOT from inside website/)
+python3 -m website.main
+
+# admin console (separate terminal, run from Database_app/src)
+cd src && python3 main.py
 ```
 
-### Nastavení databáze
+Both apps read the same `config/config.ini` for the MySQL connection — no credentials are included here; point it at your own local MySQL instance.
 
-1. Stáhněte a nainstalujte MySQL server.
-2. Vytvořte připojení k localhost s následujícími parametry:
-   - Hostname: 127.0.0.1
-   - Port: 3306
-   - Username: SA
-   - Password: student
-3. V MySQL vytvořte nový dotaz a zkopírujte obsah souboru `script.sql` do dotazu.
-4. Nejprve vytvořte a použijte databázi a poté vytvořte tabulky. Poté můžete vložit nějaká data a spustit příkazy pro vytvoření pohledů.
+## 🎓 What I learned
 
-### Spuštění webové aplikace
+Splitting a customer-facing app and an admin tool over one shared database, the Factory pattern for table-level CRUD, Flask blueprints/sessions/auth, and writing tests (pytest) alongside the application instead of after it. Also a concrete lesson in what to fix first on a revisit: this version stores customer passwords in plaintext, whereas the `order-management-gui` project (built later) hashes them with SHA-256 — a good example of the same author's security habits improving between projects.
 
-1. Otevřete terminál a změňte adresář na `website`:
-   ```bash
-   cd Database_app/website
-   ```
-2. Spusťte webovou aplikaci:
-   ```bash
-   python3 -m website.main 5001
-   ```
-3. Webová aplikace bude dostupná na `http://127.0.0.1:5000`.
+## 🚀 Status
 
-### Spuštění terminálové aplikace
+Built during studies at SPŠE Ječná (larger year project) — a school project, not a real store; noted honestly rather than hidden.
 
-1. Otevřete terminál a změňte adresář na `src`:
-   ```bash
-   cd Database_app/src
-   ```
-2. Spusťte terminálovou aplikaci:
-   ```bash
-   python3 main.py 
-   ```
-
-## Použití
-
-### Webová aplikace
-
-Webová aplikace je určena pro uživatele a nabízí následující funkce:
-- Prohlížení produktů.
-- Přidávání produktů do nákupního košíku.
-- Nákup produktů
-- Správa účtu (zobrazení a úprava informací o účtu).
-- Přihlášení a registrace.
-
-### Terminálová aplikace
-
-Terminálová aplikace je určena pro administrátory a nabízí následující funkce:
-- Správa zákazníků (přidávání, úpravy, získávání informací).
-- Správa produktů (přidávání, úpravy, získávání informací).
-- Správa objednávek (přidávání, úpravy, získávání informací).
-- Správa položek objednávek (přidávání, úpravy, získávání informací).
-- Správa transakcí (přidávání, úpravy, získávání informací).
-- Generování reportů.
-- Import dat z CSV souborů.
-
-## Výjimky
-
-Při používání aplikace se mohou vyskytnout následující výjimky:
-
-- **mysql.connector.errors.IntegrityError**: Při pokusu o smazání zákazníka, který má přidružené objednávky.
-- **AttributeError**: Při pokusu o přístup k neexistujícímu atributu objektu.
-- **TypeError**: Při předání nesprávného typu argumentu funkci.
-- **IndexError**: Při pokusu o přístup k neexistujícímu indexu v seznamu nebo n-tici.
-- **ProgrammingError**: Při pokusu o provedení neplatného SQL příkazu.
-
-## Závěr
-
-Tento projekt poskytuje kompletní řešení pro správu dat e-shopu, včetně správy zákazníků, produktů, objednávek, položek objednávek a transakcí. Systém je navržen tak, aby byl snadno rozšiřitelný a přizpůsobitelný pro různé potřeby. Pokud najdete nějaké chyby nebo máte návrhy na zlepšení, neváhejte mě kontaktovat na mém emailu. Děkuji za použití a přeji vám příjemné používání aplikace!
-
+<!-- FOOTER -->
 ---
-
-**Autor: Patrick Dyntr**  
-Třída: C3b  
-Telefon: +420607111006  
-Email: dyntr@spsejecna.cz  
-Škola: SPŠE Ječná 
+<p align="center">
+  <sub>Part of <a href="https://github.com/dyntr">Patrick Dyntr's</a> portfolio · Built by <a href="https://github.com/dyntr">@dyntr</a></sub>
+</p>
